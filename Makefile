@@ -7,7 +7,7 @@ SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 
 # Executable name
-TARGET = main
+TARGET = main.exe
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
