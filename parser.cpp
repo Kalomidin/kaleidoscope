@@ -34,6 +34,35 @@ static unique_ptr<ExprAST> ParseNumberExpr() {
   return std::move(Result);
 }
 
+// identifierexpr
+static unique_ptr<ExprAST> ParseIdentifierExpr() {
+    string idName = IdentifierStr;
+    getNextToken(); // eat identifier
+    // if it is not a function call
+    if (CurTok != '(') {
+        return make_unique<VariableExprAST>(idName);
+    }
+    // if it is a function call
+    getNextToken(); // eat (
+    vector<unique_ptr<ExprAST>> Args;
+    if (CurTok != ')') {
+        while(true) {
+            if (auto Arg = ParseExpression()) {
+                Args.push_back(std::move(Arg));
+            } else {
+                return nullptr;
+            }
+            if (CurTok == ')') break;
+            if (CurTok != ',') {
+                return LogError("Expected ')' or ',' in argument list");
+            }
+            getNextToken();
+        }
+    }
+    getNextToken(); // eat )
+    return make_unique<CallExprAST>(idName, std::move(Args));
+}
+
 // parenexpr ::= '(' expression ')'
 // expression
 // (a+b)
@@ -72,8 +101,9 @@ static int getTokPrecedence() {
 static unique_ptr<ExprAST> ParsePrimary() {
     switch (CurTok) {
     case tok_number:
-        getNextToken();
         return ParseNumberExpr();
+    case tok_identifier:
+        return ParseIdentifierExpr();
     case '(':
         return ParseParentExpr();
         // TODO: Add support for parsing prototype and identifier
@@ -113,11 +143,12 @@ static unique_ptr<PrototypeAST> ParsePrototype() {
     if (CurTok != '(')
         return LogErrorP("Expected '(' in prototype");
 
+    // TODO: Do not allow duplicate arguments
     vector<string> ArgNames;
     while (getNextToken() == tok_identifier)
         ArgNames.push_back(IdentifierStr);
     if (CurTok != ')')
-        return LogErrorP("Expected ')' in prototype");
+        return LogErrorP("Expected ')' in prototype, got " + CurTok);
 
     getNextToken(); // eat )
     return make_unique<PrototypeAST>(FnName, std::move(ArgNames));
@@ -174,6 +205,9 @@ void MainLoop() {
             case tok_extern:
                 HandleExtern();
                 break;
+            default:
+                LogError("Unknown token when expecting a definition or an expression");
+                return;
         }
     }
 }
