@@ -8,6 +8,7 @@ using namespace std;
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "ast.hpp"
 #include "lexer.hpp"
@@ -193,6 +194,7 @@ static void HandleExtern() {
 void MainLoop() {
     while(true) {
         fprintf(stderr, "ready>");
+        // cout << "Hello\n";
         switch(CurTok) {
             case tok_eof:
                 return;
@@ -206,8 +208,9 @@ void MainLoop() {
                 HandleExtern();
                 break;
             default:
-                LogError("Unknown token when expecting a definition or an expression");
-                return;
+                cout << "Error: Unknown token " << (char)CurTok << "... failed to create AST\n";
+                getNextToken();
+                break;
         }
     }
 }
