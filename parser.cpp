@@ -201,6 +201,15 @@ static void HandleStatement() {
     }
 }
 
+static void HandleTopLevelExpression() {
+    if (auto Expr = ParseExpression()) {
+        fprintf(stderr, "Parsed a top-level expression.\n");
+    } else {
+        // Skip token for error recovery.
+        getNextToken();
+    }
+}
+
 void MainLoop() {
     while(true) {
         // every time before get next token, print the prompt
@@ -221,7 +230,7 @@ void MainLoop() {
                 cout << "Done\n";
                 return;
             default:
-                cout << "Error: Unknown token " << (char)CurTok << "... failed to create AST\n";
+                HandleTopLevelExpression();
                 break;
         }
     }
