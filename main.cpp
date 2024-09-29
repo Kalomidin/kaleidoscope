@@ -5,9 +5,6 @@ using namespace std;
 #include <iostream> 
 
 int main() {
-  // Prime the first token.
-  fprintf(stderr, "ready> ");
-  getNextToken();
 
   // Run the main "interpreter loop" now.
   MainLoop();

@@ -37,6 +37,8 @@ int gettokn() {
             return tok_def;
         if (IdentifierStr == "extern")
             return tok_extern;
+        if (IdentifierStr == "done" and LastChar == ';')
+            return tok_done;
         return tok_identifier;
     }
 

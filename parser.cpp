@@ -191,15 +191,25 @@ static void HandleExtern() {
     }
 }
 
+static void HandleStatement() {
+    auto Expr = ParseExpression();
+    if (Expr) {
+        fprintf(stderr, "Parsed a statement\n");
+    } else {
+        // Skip token for error recovery.
+        getNextToken();
+    }
+}
+
 void MainLoop() {
     while(true) {
+        // every time before get next token, print the prompt
         fprintf(stderr, "ready>");
-        // cout << "Hello\n";
+        getNextToken();
         switch(CurTok) {
             case tok_eof:
                 return;
             case ';':
-                getNextToken();
                 break;
             case tok_def:
                 HandleDefinition();
@@ -207,9 +217,11 @@ void MainLoop() {
             case tok_extern:
                 HandleExtern();
                 break;
+            case tok_done:
+                cout << "Done\n";
+                return;
             default:
                 cout << "Error: Unknown token " << (char)CurTok << "... failed to create AST\n";
-                getNextToken();
                 break;
         }
     }

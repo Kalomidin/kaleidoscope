@@ -9,9 +9,13 @@ OBJS = $(SRCS:.cpp=.o)
 # Executable name
 TARGET = main.exe
 
-# Rule to build the executable
+# Rule to build the executable if the .o files are up to date
+# Then run the executable even if there is no change in the .o files
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+	@echo "Running the executable..."
+	./$(TARGET)
+
 
 # Rule to compile .cpp files into .o files
 %.o: %.cpp
