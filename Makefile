@@ -12,6 +12,8 @@ TARGET = main.exe
 # Rule to build the executable
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+
+run:
 	@echo "Running the executable..."
 	./$(TARGET)
 

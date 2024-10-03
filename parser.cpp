@@ -1,5 +1,9 @@
 using namespace std;
 
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Value.h"
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -17,22 +21,11 @@ static unique_ptr<ExprAST> ParsePrimary();
 static unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, unique_ptr<ExprAST> LHS);
 static unique_ptr<ExprAST> ParseExpression();
 
-/// LogError* - These are little helper functions for error handling.
-std::unique_ptr<ExprAST> LogError(const char *Str) {
-  fprintf(stderr, "Error: %s\n", Str);
-  return nullptr;
-}
-std::unique_ptr<PrototypeAST> LogErrorP(const char *Str) {
-  LogError(Str);
-  return nullptr;
-}
-
-
 // + 3 5 -> this returns ExprAST(3)
 static unique_ptr<ExprAST> ParseNumberExpr() {
   auto Result = make_unique<NumberExprAST>(NumVal);
   getNextToken(); // consume the number
-  return std::move(Result);
+  return move(Result);
 }
 
 // identifierexpr
@@ -149,7 +142,7 @@ static unique_ptr<PrototypeAST> ParsePrototype() {
     while (getNextToken() == tok_identifier)
         ArgNames.push_back(IdentifierStr);
     if (CurTok != ')')
-        return LogErrorP("Expected ')' in prototype, got " + CurTok);
+        return LogErrorP("Expected ')' in prototype, got " + char(CurTok));
 
     getNextToken(); // eat )
     return make_unique<PrototypeAST>(FnName, std::move(ArgNames));
@@ -176,15 +169,22 @@ static unique_ptr<PrototypeAST> ParseExtern() {
 static void HandleDefinition() {
     if (auto FnAST = ParseDefinition()) {
         fprintf(stderr, "Parsed a function definition.\n");
-    } else {
-        // Skip token for error recovery.
-        getNextToken();
+        if (auto *FnIR = FnAST->codegen()) {
+            fprintf(stderr, "Codegen success handle definition\n");
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+        }
     }
 }
 
 static void HandleExtern() {
     if (auto ProtoAST = ParseExtern()) {
         fprintf(stderr, "Parsed an extern\n");
+        if (auto *FnIR = ProtoAST->codegen()) {
+            fprintf(stderr, "Codegen success handle extern\n");
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+        }
     } else {
         // Skip token for error recovery.
         getNextToken();
@@ -201,9 +201,27 @@ static void HandleStatement() {
     }
 }
 
+/// toplevelexpr ::= expression
+static std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
+  if (auto E = ParseExpression()) {
+    // Make an anonymous proto.
+    auto Proto = std::make_unique<PrototypeAST>("__anon_expr",
+                                                 std::vector<std::string>());
+    return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
+  }
+  return nullptr;
+}
+
 static void HandleTopLevelExpression() {
-    if (auto Expr = ParseExpression()) {
+    if (auto Expr = ParseTopLevelExpr()) {
         fprintf(stderr, "Parsed a top-level expression.\n");
+        if (auto *FnIR = Expr->codegen()) {
+            fprintf(stderr, "Codegen success handle top level expression\n");
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+            
+            FnIR->eraseFromParent();
+        }
     } else {
         // Skip token for error recovery.
         getNextToken();
@@ -226,8 +244,8 @@ void MainLoop() {
             case tok_extern:
                 HandleExtern();
                 break;
-            case tok_done:
-                cout << "Done\n";
+            case tok_close:
+                cout << "Close\n";
                 return;
             default:
                 HandleTopLevelExpression();

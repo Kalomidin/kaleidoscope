@@ -1,13 +1,9 @@
-using namespace std;
-
 #include "lexer.hpp"
 #include "parser.hpp"
-#include <iostream> 
+#include <iostream>
 
 int main() {
-
-  // Run the main "interpreter loop" now.
+  InitializeModule();
   MainLoop();
-
   return 0;
 }

@@ -17,7 +17,7 @@ enum Token {
     tok_extern = -3,
     tok_identifier = -4,
     tok_number = -5,
-    tok_done = -6,
+    tok_close = -6,
 };
 
 
