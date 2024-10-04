@@ -214,12 +214,33 @@ static std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
 
 static void HandleTopLevelExpression() {
     if (auto Expr = ParseTopLevelExpr()) {
+        auto fnName = Expr->getProto()->getName();
         fprintf(stderr, "Parsed a top-level expression.\n");
         if (auto *FnIR = Expr->codegen()) {
             fprintf(stderr, "Codegen success handle top level expression\n");
             FnIR->print(llvm::errs());
             fprintf(stderr, "\n");
+            // track the resource
+            auto RT = TheJIT->getMainJITDylib().createResourceTracker();
+
+            auto cpyTheModule = llvm::CloneModule(*TheModule.get());
+            auto cpyTheContext = std::make_unique<llvm::LLVMContext>();
+
+            // thread safe module
+            // auto TSM = llvm::orc::ThreadSafeModule(move(TheModule), move(TheContext));
+            auto TSM = llvm::orc::ThreadSafeModule(move(cpyTheModule), move(cpyTheContext));
+
+            // add the module to the JIT
+            ExitOnErr(TheJIT->addModule(std::move(TSM), RT));
             
+            // search for the symbol
+            auto ExprSymb = ExitOnErr(TheJIT->lookup(fnName));
+
+            double (*FP)() = ExprSymb.getAddress().toPtr<double (*)()>();
+            fprintf(stderr, "Evaluated to %f\n", FP());
+            
+            ExitOnErr(RT->remove());
+            // remove the function from the module
             FnIR->eraseFromParent();
         }
     } else {
