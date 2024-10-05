@@ -191,16 +191,6 @@ static void HandleExtern() {
     }
 }
 
-static void HandleStatement() {
-    auto Expr = ParseExpression();
-    if (Expr) {
-        fprintf(stderr, "Parsed a statement\n");
-    } else {
-        // Skip token for error recovery.
-        getNextToken();
-    }
-}
-
 /// toplevelexpr ::= expression
 static std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
   if (auto E = ParseExpression()) {
@@ -222,7 +212,10 @@ static void HandleTopLevelExpression() {
             fprintf(stderr, "\n");
             // track the resource
             auto RT = TheJIT->getMainJITDylib().createResourceTracker();
-
+            
+            // Other option is to store all functions in a functionProto map
+            // and then lookup for the function in the map
+            // this will remove dependency to TheModule if only use case of TheModule is to store functions
             auto cpyTheModule = llvm::CloneModule(*TheModule.get());
             auto cpyTheContext = std::make_unique<llvm::LLVMContext>();
 
