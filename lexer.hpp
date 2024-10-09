@@ -18,6 +18,9 @@ enum Token {
     tok_identifier = -4,
     tok_number = -5,
     tok_close = -6,
+    tok_if = -7,
+    tok_then = -8,
+    tok_else = -9,
 };
 
 

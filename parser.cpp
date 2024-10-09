@@ -20,6 +20,7 @@ using namespace std;
 static unique_ptr<ExprAST> ParsePrimary();
 static unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, unique_ptr<ExprAST> LHS);
 static unique_ptr<ExprAST> ParseExpression();
+static unique_ptr<IfExprAST> ParseIf();
 
 // + 3 5 -> this returns ExprAST(3)
 static unique_ptr<ExprAST> ParseNumberExpr() {
@@ -69,7 +70,7 @@ static unique_ptr<ExprAST> ParseParentExpr() {
     return v;
 }
 
-// we only support +, - , * and /
+// we only support +, - , *, /, <, >
 static unique_ptr<ExprAST> ParseExpression() {
     auto LHS = ParsePrimary();
     if (!LHS) return nullptr;
@@ -79,13 +80,17 @@ static unique_ptr<ExprAST> ParseExpression() {
 static int getTokPrecedence() {
     switch(CurTok) {
     case '+':
-        return 1;
+        return 10;
     case '-':
-        return 1;
+        return 10;
     case '*':
-        return 2;
+        return 20;
     case '/':
-        return 2;
+        return 20;
+    case '<':
+        return 0;
+    case '>':
+        return 0;
     default:
         return -1;
     }
@@ -100,7 +105,8 @@ static unique_ptr<ExprAST> ParsePrimary() {
         return ParseIdentifierExpr();
     case '(':
         return ParseParentExpr();
-        // TODO: Add support for parsing prototype and identifier
+    case tok_if:
+        return ParseIf();
     default:
         return LogError("unknown token when expecting an expression");
     }
@@ -163,6 +169,24 @@ static unique_ptr<FunctionAST> ParseDefinition() {
 static unique_ptr<PrototypeAST> ParseExtern() {
     getNextToken(); // eat extern.
     return ParsePrototype();
+}
+
+// parse if
+static unique_ptr<IfExprAST> ParseIf() {
+    getNextToken();
+    auto Cond = ParseExpression();
+    if (!Cond) return nullptr;
+    if (CurTok != tok_then) {
+        LogError("Expected then");
+        return nullptr;
+    };
+    getNextToken(); // eat then
+    auto Then = ParseExpression();
+    if (!Then) return nullptr;
+    getNextToken(); // eat else
+    auto Else = ParseExpression();
+    if (!Else) return nullptr;
+    return make_unique<IfExprAST>(std::move(Cond), std::move(Then), std::move(Else));
 }
 
 

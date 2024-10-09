@@ -61,6 +61,12 @@ Value *BinaryExprAST::codegen() {
             return Builder->CreateFMul(L, R, "multmp");
         case '/':
             return Builder->CreateFDiv(L, R, "divtmp");
+        case '<':
+            L = Builder->CreateFCmpULT(L, R, "cmptmp");
+            return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+        case '>':
+            L = Builder->CreateFCmpUGT(L, R, "cmptmp");
+            return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
         default:
             return LogErrorV("invalid binary operator");
     }
@@ -159,6 +165,46 @@ Function *FunctionAST::codegen() {
     return nullptr;
 }
 
+Value *IfExprAST::codegen() {
+    // evaluate the condition
+    Value *CondV = Cond->codegen();
+    if (!CondV) return nullptr;
+
+    CondV = Builder->CreateFCmpONE(CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "ifcond");
+    Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+    BasicBlock *ThenBB = BasicBlock::Create(*TheContext, "then", TheFunction);
+    BasicBlock *ElseBB = BasicBlock::Create(*TheContext, "else");
+    BasicBlock *MergeBB = BasicBlock::Create(*TheContext, "ifcont");
+
+    Builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+    Builder->SetInsertPoint(ThenBB);
+
+    Value *ThenV = Then->codegen();
+    if (!ThenV) return nullptr;
+
+    Builder->CreateBr(MergeBB);
+    ThenBB = Builder->GetInsertBlock();
+
+    TheFunction->insert(TheFunction->end(), ElseBB);
+    Builder->SetInsertPoint(ElseBB);
+
+    Value *ElseV = Else->codegen();
+    if (!ElseV) return nullptr;
+
+    Builder->CreateBr(MergeBB);
+    ElseBB = Builder->GetInsertBlock();
+
+    TheFunction->insert(TheFunction->end(), MergeBB);
+    Builder->SetInsertPoint(MergeBB);
+
+    PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
+
+    PN->addIncoming(ThenV, ThenBB);
+    PN->addIncoming(ElseV, ElseBB);
+    return PN;
+}
 
 void InitializeJIT() {
     InitializeNativeTarget();
