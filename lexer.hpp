@@ -21,6 +21,8 @@ enum Token {
     tok_if = -7,
     tok_then = -8,
     tok_else = -9,
+    tok_for = -10,
+    tok_in = -11,
 };
 
 

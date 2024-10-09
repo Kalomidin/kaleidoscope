@@ -206,6 +206,53 @@ Value *IfExprAST::codegen() {
     return PN;
 }
 
+Value *ForExprAST::codegen() {
+    // evaluate the start
+    Value *StartVal = Start->codegen();
+    if (!StartVal) return nullptr;
+    // set the variable
+    NamedValues[VarName] = StartVal;
+
+    // create the basic block
+    Function *TheFunction = Builder->GetInsertBlock()->getParent();
+
+    // create basic blocks
+    BasicBlock *LoopCondBB = BasicBlock::Create(*TheContext, "loopcond", TheFunction);
+    BasicBlock *BodyBB = BasicBlock::Create(*TheContext, "loopbody");
+    BasicBlock *StepBB = BasicBlock::Create(*TheContext, "loopstep");
+    BasicBlock *AfterBB = BasicBlock::Create(*TheContext, "loopafter");
+
+    // go to loop cond bb
+    Builder->SetInsertPoint(LoopCondBB);
+    // evaluate the cond
+    Value *EndCond = Cond->codegen();
+    if (!EndCond) return nullptr;
+    // compare the cond
+    EndCond = Builder->CreateFCmpONE(EndCond, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
+    // create the if statement
+    Builder->CreateCondBr(EndCond, BodyBB, AfterBB);
+
+    // evaluate the body
+    Builder->SetInsertPoint(BodyBB);
+    Value *BodyVal = Body->codegen();
+    if (!BodyVal) return nullptr;
+    Builder->CreateBr(StepBB);
+
+    // evaluate the step
+    Builder->SetInsertPoint(StepBB);
+    Value *StepVal = Step->codegen();
+    if (!StepVal) return nullptr;
+    Value *NextVar = Builder->CreateFAdd(NamedValues[VarName], StepVal, "nextvar");
+    Builder->CreateStore(NextVar, NamedValues[VarName]);
+    // create the loop
+    Builder->CreateBr(LoopCondBB);
+
+    PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "fortmp");
+    PN->addIncoming(BodyVal, BodyBB);
+    PN->addIncoming(ConstantFP::get(*TheContext, APFloat(0.0)), AfterBB);
+    return PN;
+}
+
 void InitializeJIT() {
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();

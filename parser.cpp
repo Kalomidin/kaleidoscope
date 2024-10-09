@@ -21,6 +21,7 @@ static unique_ptr<ExprAST> ParsePrimary();
 static unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, unique_ptr<ExprAST> LHS);
 static unique_ptr<ExprAST> ParseExpression();
 static unique_ptr<IfExprAST> ParseIf();
+static unique_ptr<ForExprAST> ParseFor();
 
 // + 3 5 -> this returns ExprAST(3)
 static unique_ptr<ExprAST> ParseNumberExpr() {
@@ -107,6 +108,8 @@ static unique_ptr<ExprAST> ParsePrimary() {
         return ParseParentExpr();
     case tok_if:
         return ParseIf();
+    case tok_for:
+        return ParseFor();
     default:
         return LogError("unknown token when expecting an expression");
     }
@@ -189,6 +192,25 @@ static unique_ptr<IfExprAST> ParseIf() {
     return make_unique<IfExprAST>(std::move(Cond), std::move(Then), std::move(Else));
 }
 
+// parse for
+static unique_ptr<ForExprAST> ParseFor() {
+    getNextToken(); // eat for
+    string identifier = IdentifierStr;
+    getNextToken(); // eat identifier
+    getNextToken(); // eat =
+    auto Start = ParseExpression();
+    if (!Start) return nullptr;
+    getNextToken(); // eat ,
+    auto End = ParseExpression();
+    if (!End) return nullptr;
+    getNextToken(); // eat ,
+    auto Step = ParseExpression();
+    if (!Step) return nullptr;
+    getNextToken(); // eat in
+    auto Body = ParseExpression();
+    if (!Body) return nullptr;
+    return make_unique<ForExprAST>(identifier, std::move(Start), std::move(End), std::move(Step), std::move(Body));
+}
 
 static void HandleDefinition() {
     if (auto FnAST = ParseDefinition()) {
