@@ -175,9 +175,6 @@ inline llvm::Value *LogErrorV(const char *Str) {
   return nullptr;
 }
 
-#ifndef UTILS_H   // Start of the include guard
-#define UTILS_H
-
 extern "C" {
     #ifdef _WIN32
         #define DLLEXPORT __declspec(dllexport)
@@ -191,7 +188,5 @@ extern "C" {
     // printd - printf that takes a double and prints it as "%f\n", returning 0.
     DLLEXPORT double printd(double X);
 }
-
-#endif // End of the include guard
 
 #endif // AST_HPP

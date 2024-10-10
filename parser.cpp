@@ -276,8 +276,8 @@ static void HandleTopLevelExpression() {
             auto ExprSymb = ExitOnErr(TheJIT->lookup(fnName));
 
             double (*FP)() = ExprSymb.getAddress().toPtr<double (*)()>();
-            fprintf(stderr, "Evaluated to %f\n", FP());
-            
+            fprintf(stderr, "\nResult: %f\n", FP());
+            fprintf(stderr, "\n");
             ExitOnErr(RT->remove());
             // remove the function from the module
             FnIR->eraseFromParent();

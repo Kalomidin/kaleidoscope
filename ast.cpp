@@ -306,3 +306,16 @@ void InitializeModule() {
     PB.registerFunctionAnalyses(*TheFAM);
     PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
 }
+
+
+// putchard - putchar that takes a double and returns 0.
+double putchard(double X) {
+    fputc((char)X, stderr);
+    return 0;
+}
+
+// printd - printf that takes a double and prints it as "%f\n", returning 0.
+double printd(double X) {
+    printf("%f\n", X);
+    return 0;   
+}
