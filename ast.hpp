@@ -122,7 +122,7 @@ class ForExprAST: public ExprAST {
     std::string VarName;
     std::unique_ptr<ExprAST> Start, Cond, Step, Body;
 public:
-    ForExprAST(const std::string &VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Step, std::unique_ptr<ExprAST> Body)
+    ForExprAST(const std::string &VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Step, std::unique_ptr<ExprAST> Body)
         : VarName(VarName), Start(std::move(Start)), Cond(std::move(Cond)), Step(std::move(Step)), Body(std::move(Body)) {}
     llvm::Value *codegen() override;
 };
@@ -174,5 +174,24 @@ inline llvm::Value *LogErrorV(const char *Str) {
   LogError(Str);
   return nullptr;
 }
+
+#ifndef UTILS_H   // Start of the include guard
+#define UTILS_H
+
+extern "C" {
+    #ifdef _WIN32
+        #define DLLEXPORT __declspec(dllexport)
+    #else
+        #define DLLEXPORT
+    #endif
+
+    // putchard - putchar that takes a double and returns 0.
+    DLLEXPORT double putchard(double X);
+
+    // printd - printf that takes a double and prints it as "%f\n", returning 0.
+    DLLEXPORT double printd(double X);
+}
+
+#endif // End of the include guard
 
 #endif // AST_HPP

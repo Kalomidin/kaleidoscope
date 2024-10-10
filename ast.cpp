@@ -149,6 +149,7 @@ Function *FunctionAST::codegen() {
         NamedValues[std::string(Arg.getName())] = &Arg;
 
     if (Value *RetVal = Body->codegen()) {
+
         Builder->CreateRet(RetVal);
 
         // validate the generated code, check for consistency.
@@ -210,47 +211,60 @@ Value *ForExprAST::codegen() {
     // evaluate the start
     Value *StartVal = Start->codegen();
     if (!StartVal) return nullptr;
-    // set the variable
-    NamedValues[VarName] = StartVal;
+    auto oldVal = NamedValues[VarName];
+
 
     // create the basic block
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
-
-    // create basic blocks
-    BasicBlock *LoopCondBB = BasicBlock::Create(*TheContext, "loopcond", TheFunction);
-    BasicBlock *BodyBB = BasicBlock::Create(*TheContext, "loopbody");
+    BasicBlock *LoopBB = BasicBlock::Create(*TheContext, "loop", TheFunction);
     BasicBlock *StepBB = BasicBlock::Create(*TheContext, "loopstep");
+    BasicBlock *BodyBB = BasicBlock::Create(*TheContext, "loopbody");
     BasicBlock *AfterBB = BasicBlock::Create(*TheContext, "loopafter");
+    BasicBlock *CurBB = Builder->GetInsertBlock();
+    Builder->CreateBr(LoopBB);
 
-    // go to loop cond bb
-    Builder->SetInsertPoint(LoopCondBB);
-    // evaluate the cond
-    Value *EndCond = Cond->codegen();
-    if (!EndCond) return nullptr;
-    // compare the cond
-    EndCond = Builder->CreateFCmpONE(EndCond, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
-    // create the if statement
-    Builder->CreateCondBr(EndCond, BodyBB, AfterBB);
+    // Evaluate the condition
+    Builder->SetInsertPoint(LoopBB);
 
-    // evaluate the body
+    PHINode *Variable = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, VarName.c_str());
+    Variable->addIncoming(StartVal, CurBB);
+
+    // set the variable
+    NamedValues[VarName] = Variable;
+
+    Value *CondV = Cond->codegen();
+    if (!CondV) return nullptr;
+    CondV = Builder->CreateFCmpONE(CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
+    Builder->CreateCondBr(CondV, BodyBB, AfterBB);
+
+    // Evaluate the body
     Builder->SetInsertPoint(BodyBB);
-    Value *BodyVal = Body->codegen();
-    if (!BodyVal) return nullptr;
+    if (!Body->codegen()) return nullptr;
     Builder->CreateBr(StepBB);
+    // add the body block to the function
+    TheFunction->insert(TheFunction->end(), BodyBB);
 
-    // evaluate the step
+    // Evaluate the step
     Builder->SetInsertPoint(StepBB);
     Value *StepVal = Step->codegen();
     if (!StepVal) return nullptr;
-    Value *NextVar = Builder->CreateFAdd(NamedValues[VarName], StepVal, "nextvar");
-    Builder->CreateStore(NextVar, NamedValues[VarName]);
-    // create the loop
-    Builder->CreateBr(LoopCondBB);
+    Value *NextVar = Builder->CreateFAdd(Variable, StepVal, "nextvar");
+    Variable->addIncoming(NextVar, Builder->GetInsertBlock());
 
-    PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "fortmp");
-    PN->addIncoming(BodyVal, BodyBB);
-    PN->addIncoming(ConstantFP::get(*TheContext, APFloat(0.0)), AfterBB);
-    return PN;
+    Builder->CreateBr(LoopBB);
+    TheFunction->insert(TheFunction->end(), StepBB);
+
+    // Evaluate the after loop
+    Builder->SetInsertPoint(AfterBB);
+    if (oldVal) {
+        NamedValues[VarName] = oldVal;
+    } else {
+        NamedValues.erase(VarName);
+    }
+    TheFunction->insert(TheFunction->end(), AfterBB);
+
+    auto resp = Constant::getNullValue(Type::getDoubleTy(*TheContext));
+    return resp;
 }
 
 void InitializeJIT() {
