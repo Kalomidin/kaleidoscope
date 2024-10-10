@@ -3,8 +3,8 @@
 #include <iostream>
 
 int main() {
-  InitializeJIT();
-  InitializeModule();
-  MainLoop();
-  return 0;
+    InitializeJIT();
+    InitializeModule();
+    MainLoop();
+    return 0;
 }

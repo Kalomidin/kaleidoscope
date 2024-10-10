@@ -1,23 +1,19 @@
 // lexer.cpp
-#include <string>
-#include <iostream>
 #include "lexer.hpp"
+#include <iostream>
+#include <string>
 
-using namespace std;  // Safe to use in cpp files
+using namespace std; // Safe to use in cpp files
 
 // Define global variables here, to avoid multiple definitions
-string IdentifierStr; 
+string IdentifierStr;
 double NumVal;
 int CurTok;
 
 // Helper functions
-bool is_alpha(int c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-}
+bool is_alpha(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 
-bool is_alnum(int c) {
-    return is_alpha(c) || (c >= '0' && c <= '9');
-}
+bool is_alnum(int c) { return is_alpha(c) || (c >= '0' && c <= '9'); }
 
 // gettokn - Return the next token from standard input.
 int gettokn() {
@@ -28,7 +24,7 @@ int gettokn() {
         LastChar = getchar();
 
     // Check if the character is an alphabet
-    if (is_alpha(LastChar)) {  // identifier: [a-zA-Z][a-zA-Z0-9]*
+    if (is_alpha(LastChar)) { // identifier: [a-zA-Z][a-zA-Z0-9]*
         IdentifierStr = LastChar;
         while (is_alnum((LastChar = getchar())))
             IdentifierStr += LastChar;
@@ -86,6 +82,4 @@ int gettokn() {
 }
 
 // Define getNextToken here instead of in the header
-int getNextToken() {
-    return CurTok = gettokn();
-}
+int getNextToken() { return CurTok = gettokn(); }

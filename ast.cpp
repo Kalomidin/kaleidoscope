@@ -1,7 +1,6 @@
 
-#include <iostream>
 #include "ast.hpp"
-
+#include <iostream>
 
 // LLVMContext is necessary for managing the LLVM context
 std::unique_ptr<llvm::LLVMContext> TheContext;
@@ -15,7 +14,7 @@ std::unique_ptr<llvm::Module> TheModule;
 // NamedValues is used to store the values of variables
 std::map<std::string, llvm::Value *> NamedValues;
 
-// JIT serves as the interface to the JIT engine    
+// JIT serves as the interface to the JIT engine
 std::unique_ptr<llvm::orc::KaleidoscopeJIT> TheJIT;
 
 // FPM is the FunctionPassManager, used to optimize the generated LLVM IR
@@ -35,9 +34,7 @@ llvm::ExitOnError ExitOnErr;
 using namespace llvm;
 
 // NumberExprAST implementation
-Value *NumberExprAST::codegen() {
-    return ConstantFP::get(*TheContext, APFloat(Val));
-}
+Value *NumberExprAST::codegen() { return ConstantFP::get(*TheContext, APFloat(Val)); }
 
 // VariableExprAST implementation
 Value *VariableExprAST::codegen() {
@@ -50,25 +47,26 @@ Value *VariableExprAST::codegen() {
 Value *BinaryExprAST::codegen() {
     Value *L = LHS->codegen();
     Value *R = RHS->codegen();
-    if (!L || !R) return nullptr;
+    if (!L || !R)
+        return nullptr;
 
     switch (Op) {
-        case '+':
-            return Builder->CreateFAdd(L, R, "addtmp");
-        case '-':
-            return Builder->CreateFSub(L, R, "subtmp");
-        case '*':
-            return Builder->CreateFMul(L, R, "multmp");
-        case '/':
-            return Builder->CreateFDiv(L, R, "divtmp");
-        case '<':
-            L = Builder->CreateFCmpULT(L, R, "cmptmp");
-            return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-        case '>':
-            L = Builder->CreateFCmpUGT(L, R, "cmptmp");
-            return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
-        default:
-            return LogErrorV("invalid binary operator");
+    case '+':
+        return Builder->CreateFAdd(L, R, "addtmp");
+    case '-':
+        return Builder->CreateFSub(L, R, "subtmp");
+    case '*':
+        return Builder->CreateFMul(L, R, "multmp");
+    case '/':
+        return Builder->CreateFDiv(L, R, "divtmp");
+    case '<':
+        L = Builder->CreateFCmpULT(L, R, "cmptmp");
+        return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+    case '>':
+        L = Builder->CreateFCmpUGT(L, R, "cmptmp");
+        return Builder->CreateUIToFP(L, Type::getDoubleTy(*TheContext), "booltmp");
+    default:
+        return LogErrorV("invalid binary operator");
     }
 }
 
@@ -96,7 +94,7 @@ Value *CallExprAST::codegen() {
 // PrototypeAST implementation
 Function *PrototypeAST::codegen() {
     if (!TheContext) {
-        return (Function*)LogErrorV("TheContext is null");
+        return (Function *)LogErrorV("TheContext is null");
     }
 
     std::vector<Type *> Doubles(Args.size(), Type::getDoubleTy(*TheContext));
@@ -113,7 +111,7 @@ Function *FunctionAST::codegen() {
 
     // First, check for an existing function from a previous declaration.
     Function *TheFunction = TheModule->getFunction(Proto->getName());
-    
+
     // if there is declaration, do nothing.
     // it could imported using extern.
     if (!TheFunction)
@@ -123,22 +121,21 @@ Function *FunctionAST::codegen() {
     if (!TheFunction)
         return nullptr;
 
-    Function *temp = TheModule->getFunction(Proto->getName());
-
-    // if function body has already been generated, return err as we don't allow redefinition.
+    // if function body has already been generated, return err as we don't allow
+    // redefinition.
     if (!TheFunction->empty())
-        return (Function*)LogErrorV(("Function cannot be redefined: " + Proto->getName()).c_str());
+        return (Function *)LogErrorV(("Function cannot be redefined: " + Proto->getName()).c_str());
 
-    // verify that the function args are the same 
+    // verify that the function args are the same
     if (TheFunction->arg_size() != Proto->getArgs().size()) {
-        return (Function*)LogErrorV("Unknown variable name.");
+        return (Function *)LogErrorV("Unknown variable name.");
     }
     for (unsigned i = 0; i < TheFunction->arg_size(); i++) {
         if (TheFunction->getArg(i)->getName() != Proto->getArgs()[i]) {
-            return (Function*)LogErrorV("Unknown variable name.");
+            return (Function *)LogErrorV("Unknown variable name.");
         }
     }
-    
+
     // Create a new basic block to start insertion into.
     BasicBlock *BB = BasicBlock::Create(*TheContext, "entry", TheFunction);
     Builder->SetInsertPoint(BB);
@@ -169,7 +166,8 @@ Function *FunctionAST::codegen() {
 Value *IfExprAST::codegen() {
     // evaluate the condition
     Value *CondV = Cond->codegen();
-    if (!CondV) return nullptr;
+    if (!CondV)
+        return nullptr;
 
     CondV = Builder->CreateFCmpONE(CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "ifcond");
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
@@ -183,7 +181,8 @@ Value *IfExprAST::codegen() {
     Builder->SetInsertPoint(ThenBB);
 
     Value *ThenV = Then->codegen();
-    if (!ThenV) return nullptr;
+    if (!ThenV)
+        return nullptr;
 
     Builder->CreateBr(MergeBB);
     ThenBB = Builder->GetInsertBlock();
@@ -192,7 +191,8 @@ Value *IfExprAST::codegen() {
     Builder->SetInsertPoint(ElseBB);
 
     Value *ElseV = Else->codegen();
-    if (!ElseV) return nullptr;
+    if (!ElseV)
+        return nullptr;
 
     Builder->CreateBr(MergeBB);
     ElseBB = Builder->GetInsertBlock();
@@ -210,9 +210,9 @@ Value *IfExprAST::codegen() {
 Value *ForExprAST::codegen() {
     // evaluate the start
     Value *StartVal = Start->codegen();
-    if (!StartVal) return nullptr;
+    if (!StartVal)
+        return nullptr;
     auto oldVal = NamedValues[VarName];
-
 
     // create the basic block
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
@@ -233,13 +233,15 @@ Value *ForExprAST::codegen() {
     NamedValues[VarName] = Variable;
 
     Value *CondV = Cond->codegen();
-    if (!CondV) return nullptr;
+    if (!CondV)
+        return nullptr;
     CondV = Builder->CreateFCmpONE(CondV, ConstantFP::get(*TheContext, APFloat(0.0)), "loopcond");
     Builder->CreateCondBr(CondV, BodyBB, AfterBB);
 
     // Evaluate the body
     Builder->SetInsertPoint(BodyBB);
-    if (!Body->codegen()) return nullptr;
+    if (!Body->codegen())
+        return nullptr;
     Builder->CreateBr(StepBB);
     // add the body block to the function
     TheFunction->insert(TheFunction->end(), BodyBB);
@@ -247,7 +249,8 @@ Value *ForExprAST::codegen() {
     // Evaluate the step
     Builder->SetInsertPoint(StepBB);
     Value *StepVal = Step->codegen();
-    if (!StepVal) return nullptr;
+    if (!StepVal)
+        return nullptr;
     Value *NextVar = Builder->CreateFAdd(Variable, StepVal, "nextvar");
     Variable->addIncoming(NextVar, Builder->GetInsertBlock());
 
@@ -290,15 +293,20 @@ void InitializeModule() {
     TheCGAM = std::make_unique<CGSCCAnalysisManager>();
     TheMAM = std::make_unique<ModuleAnalysisManager>();
     ThePIC = std::make_unique<PassInstrumentationCallbacks>();
-    TheSI = std::make_unique<StandardInstrumentations>(*TheContext, /*DebugLogging*/ true);
+    TheSI = std::make_unique<StandardInstrumentations>(*TheContext,
+                                                       /*DebugLogging*/ true);
 
-    // InstCombinePass is a pass that combines instructions to reduce the number of instructions in the generated code.
+    // InstCombinePass is a pass that combines instructions to reduce the number
+    // of instructions in the generated code.
     TheFPM->addPass(InstCombinePass());
-    // ReassociatePass is a pass that reassociates expressions to improve performance.
+    // ReassociatePass is a pass that reassociates expressions to improve
+    // performance.
     TheFPM->addPass(ReassociatePass());
-    // GVNPass is a pass that performs global value numbering to optimize the generated code.
+    // GVNPass is a pass that performs global value numbering to optimize the
+    // generated code.
     TheFPM->addPass(GVNPass());
-    // SimplifyCFGPass is a pass that simplifies the control flow graph to improve performance.
+    // SimplifyCFGPass is a pass that simplifies the control flow graph to improve
+    // performance.
     TheFPM->addPass(SimplifyCFGPass());
 
     PassBuilder PB;
@@ -306,7 +314,6 @@ void InitializeModule() {
     PB.registerFunctionAnalyses(*TheFAM);
     PB.crossRegisterProxies(*TheLAM, *TheFAM, *TheCGAM, *TheMAM);
 }
-
 
 // putchard - putchar that takes a double and returns 0.
 double putchard(double X) {
@@ -317,5 +324,5 @@ double putchard(double X) {
 // printd - printf that takes a double and prints it as "%f\n", returning 0.
 double printd(double X) {
     printf("%f\n", X);
-    return 0;   
+    return 0;
 }

@@ -12,7 +12,7 @@ TARGET = main.exe
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS) $(MACOS_VERSION)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
 
 run:
 	@echo "Running the executable..."
@@ -35,6 +35,13 @@ install:
 		source ~/.zshrc; \
 	fi
 
+fmt:
+	@echo "Formatting code..."
+	clang-format -i $(SRCS)
+
+tidy:
+	@echo "Tidying code..."
+	clang-tidy $(SRCS) -- $(CXXFLAGS)
 
 # Rule to compile .cpp files into .o files
 %.o: %.cpp
