@@ -315,6 +315,8 @@ void MainLoop() {
             return;
         case ';':
             break;
+        case '\n':
+            break;
         case tok_def:
             HandleDefinition();
             break;

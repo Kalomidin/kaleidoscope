@@ -95,4 +95,7 @@ You can run:
 make install
 ```
 
-It will install the file.
+It will install the language. Then you can run following command:
+```
+kaleidoscope examples/fib.kal
+```
