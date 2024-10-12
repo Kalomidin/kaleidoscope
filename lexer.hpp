@@ -31,5 +31,6 @@ int gettokn();
 int getNextToken();
 void readFile(const std::string &filename);
 void closeFile();
+bool isFileSet();
 
 #endif // LEXER_HPP

@@ -307,8 +307,10 @@ static void HandleTopLevelExpression() {
 
 void MainLoop() {
     while (true) {
+        if (!isFileSet()) {
+            fprintf(stderr, "ready>");
+        }
         // every time before get next token, print the prompt
-        fprintf(stderr, "ready>");
         getNextToken();
         switch (CurTok) {
         case tok_eof:

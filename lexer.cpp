@@ -98,6 +98,8 @@ void readFile(const std::string &filename) {
     EXIT_ON_ERROR = true;
 }
 
+bool isFileSet() { return file != nullptr; }
+
 void closeFile() {
     if (file != nullptr) {
         file->close();
