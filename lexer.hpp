@@ -1,7 +1,7 @@
 // lexer.hpp
 #ifndef LEXER_HPP
 #define LEXER_HPP
-
+#include "ast.hpp"
 #include <string>
 
 // Declare external variables to avoid multiple definitions
@@ -29,5 +29,7 @@ enum Token {
 // Declare functions
 int gettokn();
 int getNextToken();
+void readFile(const std::string &filename);
+void closeFile();
 
 #endif // LEXER_HPP

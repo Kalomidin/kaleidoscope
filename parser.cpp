@@ -15,6 +15,7 @@
 
 #include "ast.hpp"
 #include "lexer.hpp"
+#include <fstream>
 
 static std::unique_ptr<ExprAST> ParsePrimary();
 static std::unique_ptr<ExprAST> ParseBinOpRHS(int ExprPrec, std::unique_ptr<ExprAST> LHS);

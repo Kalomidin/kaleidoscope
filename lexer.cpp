@@ -2,6 +2,7 @@
 #include "lexer.hpp"
 #include <iostream>
 #include <string>
+#include <fstream>
 
 using namespace std; // Safe to use in cpp files
 
@@ -9,6 +10,11 @@ using namespace std; // Safe to use in cpp files
 string IdentifierStr;
 double NumVal;
 int CurTok;
+bool EXIT_ON_ERROR = false;
+
+std::ifstream *file = nullptr;
+
+char readChar();
 
 // Helper functions
 bool is_alpha(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
@@ -21,12 +27,11 @@ int gettokn() {
 
     // Skip any whitespace.
     while (isspace(LastChar))
-        LastChar = getchar();
-
+        LastChar = readChar();
     // Check if the character is an alphabet
     if (is_alpha(LastChar)) { // identifier: [a-zA-Z][a-zA-Z0-9]*
         IdentifierStr = LastChar;
-        while (is_alnum((LastChar = getchar())))
+        while (is_alnum((LastChar = readChar())))
             IdentifierStr += LastChar;
 
         if (IdentifierStr == "def")
@@ -53,7 +58,7 @@ int gettokn() {
         string NumStr;
         do {
             NumStr += LastChar;
-            LastChar = getchar();
+            LastChar = readChar();
         } while (isdigit(LastChar) || LastChar == '.');
 
         NumVal = strtod(NumStr.c_str(), 0);
@@ -64,7 +69,7 @@ int gettokn() {
     if (LastChar == '#') {
         // Comment until end of line.
         do
-            LastChar = getchar();
+            LastChar = readChar();
         while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
 
         if (LastChar != EOF)
@@ -77,9 +82,32 @@ int gettokn() {
 
     // Otherwise, just return the character as its ASCII value.
     int ThisChar = LastChar;
-    LastChar = getchar();
+    LastChar = readChar();
     return ThisChar;
 }
 
 // Define getNextToken here instead of in the header
 int getNextToken() { return CurTok = gettokn(); }
+
+void readFile(const std::string &filename) {
+    file = new std::ifstream(filename);
+    if (!file->is_open()) {
+        std::cerr << "Error opening file: " << filename << std::endl;
+        exit(1);
+    }
+    EXIT_ON_ERROR = true;
+}
+
+void closeFile() {
+    if (file != nullptr) {
+        file->close();
+        delete file; // free the memory
+    }
+}
+
+char readChar() {
+    if (file == nullptr) {
+        return getchar();
+    }
+    return file->get();
+}

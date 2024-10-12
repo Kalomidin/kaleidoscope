@@ -8,7 +8,7 @@ OBJS = $(SRCS:.cpp=.o)
 MACOS_VERSION = -lSystem -mmacosx-version-min=13.6
 
 # Executable name
-TARGET = main.exe
+TARGET = kaleidoscope
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
@@ -18,7 +18,7 @@ run:
 	@echo "Running the executable..."
 	./$(TARGET)
 
-install:
+setup:
 	@echo "Installing LLVM..."
 	@if command -v llvm-config &> /dev/null; then \
 		echo "LLVM is already installed."; \
@@ -34,6 +34,15 @@ install:
 		echo 'export PATH="$PATH:~/Developer/llvm-install/bin"' >> ~/.zshrc; \
 		source ~/.zshrc; \
 	fi
+
+install:
+	@echo "Checking if the executable exists..."
+	@if [ ! -f $(TARGET) ]; then \
+		echo "Executable does not exist. Building..."; \
+		make; \
+	fi
+	@echo "Installing the executable..."
+	cp $(TARGET) /usr/local/bin/$(TARGET)
 
 fmt:
 	@echo "Formatting code..."

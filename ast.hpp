@@ -159,10 +159,16 @@ extern std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
 extern llvm::ExitOnError ExitOnErr;
 
+extern bool EXIT_ON_ERROR;
+
 
 /// LogError* - These are little helper functions for error handling.
 inline std::unique_ptr<ExprAST> LogError(const char *Str) {
   fprintf(stderr, "Error: %s\n", Str);
+  // if exit on error is enabled, exit the program
+  if (EXIT_ON_ERROR) {
+    exit(1);
+  }
   return nullptr;
 }
 inline std::unique_ptr<PrototypeAST> LogErrorP(const char *Str) {

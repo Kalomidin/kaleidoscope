@@ -86,3 +86,13 @@ fib(40)
 ```
 
 This program defines a function `fib` that computes the x'th Fibonacci number recursively. The program then calls this function with the argument 40.
+
+## 5. Setup
+
+You can run:
+
+```
+make install
+```
+
+It will install the file.
